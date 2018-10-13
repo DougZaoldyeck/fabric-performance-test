@@ -2,15 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	_ "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
 const (
@@ -19,50 +14,45 @@ const (
 	USERNAME    = "Admin"
 	CHAINCODEID = "testcc"
 	FCN         = "invoke"
-	CONFIG_PATH = "/opt/gopath/src/fabric-performance-test/fabric-client-go/fixtures/config.yaml"
+	CONFIG_PATH = "/opt/gopath/src/github.com/learnergo/fabric-performance-test/fabric-client-go/fixtures/config.yaml"
+	TARGETPEER  = "peer0.org1.example.com"
 )
 
-var mainSDK *fabsdk.FabricSDK
+var client = Client{}
 
 func GetHandler(w http.ResponseWriter, r *http.Request) {
 
-	clientChannelContext := mainSDK.ChannelContext(CHANNELID, fabsdk.WithUser(USERNAME), fabsdk.WithOrg(ORGNAME))
-	client, err := channel.New(clientChannelContext)
-
-	if err != nil {
-		fmt.Println("Failed to create new channel client: %s", err)
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
 	args := [][]byte{[]byte("get"), []byte("a")}
 
-	//data, err := query(client, args)
-	query(client, args)
+	_, err := client.Query(InterRequest{
+		CHAINCODEID,
+		FCN,
+		args,
+		nil,
+		[]string{TARGETPEER},
+		nil,
+	})
 	if err != nil {
 		fmt.Println("Failed to query")
 		http.Error(w, err.Error(), 500)
 		return
 
 	}
-	//fmt.Println(string(data))
 }
 
 func PutHandler(w http.ResponseWriter, r *http.Request) {
 
-	clientChannelContext := mainSDK.ChannelContext(CHANNELID, fabsdk.WithUser(USERNAME), fabsdk.WithOrg(ORGNAME))
-	client, err := channel.New(clientChannelContext)
-
-	if err != nil {
-		fmt.Println("Failed to create new channel client: %s", err)
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	kv := []byte(strconv.FormatInt(time.Now().UnixNano(), 10))
+	kv := []byte(strconv.FormatInt(time.Now().UnixNano(), 10) + strconv.Itoa(rand.Int()))
 
 	args := [][]byte{[]byte("put"), kv, kv}
-	err = invoke(client, args)
+	_, err := client.Invoke(InterRequest{
+		CHAINCODEID,
+		FCN,
+		args,
+		nil,
+		[]string{TARGETPEER},
+		nil,
+	})
 	if err != nil {
 		fmt.Println("Failed to invoke")
 		http.Error(w, err.Error(), 500)
@@ -77,9 +67,15 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
-	mainSDK, err = fabsdk.New(config.FromFile(CONFIG_PATH))
+	client, err = NewClient(CreateChannelClient{
+		CONFIG_PATH,
+		CHANNELID,
+		USERNAME,
+		ORGNAME,
+	})
 	if err != nil {
 		fmt.Println("Failed to create new SDK: %s", err)
+		return
 	}
 
 	http.HandleFunc("/gettest", GetHandler)
@@ -90,28 +86,4 @@ func main() {
 		fmt.Println("ListenAndServe:", err)
 	}
 
-}
-
-func query(client *channel.Client, args [][]byte) ([]byte, error) {
-	response, err := client.Query(channel.Request{
-		ChaincodeID: CHAINCODEID,
-		Fcn:         FCN,
-		Args:        args,
-	}, channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		fmt.Println("Failed to query funds: %s", err)
-		return nil, err
-	}
-	//fmt.Printf("--------> response: TransactionID=%s,payload=%s,valid=%s", response.TransactionID, response.Payload, response.TxValidationCode)
-	return response.Payload, nil
-}
-
-func invoke(client *channel.Client, args [][]byte) error {
-	_, err := client.Execute(channel.Request{
-		ChaincodeID: CHAINCODEID,
-		Fcn:         FCN,
-		Args:        args,
-	}, channel.WithRetry(retry.DefaultChannelOpts))
-
-	return err
 }
