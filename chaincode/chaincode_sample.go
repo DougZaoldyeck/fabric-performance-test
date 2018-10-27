@@ -63,28 +63,28 @@ func (t *cryptoChaincode) GenAESKey() ([]byte, error) {
 
 //Init implements chaincode's Init interface
 func (t *cryptoChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	return shim.Success(nil)
+	return t.writeTransaction(stub, []string{"a", "b"})
 }
 
 //Invoke implements chaincode's Invoke interface
 func (t *cryptoChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
-	if function != "invoke" {
-		return shim.Error("Unknown function call")
-	}
 
 	if len(args) < 2 {
 		return shim.Error(fmt.Sprintf("invalid number of args %d", len(args)))
 	}
 	method := args[0]
-	if method == "put" {
-		if len(args) < 3 {
+	if function == "put" {
+		if len(args) < 2 {
 			return shim.Error(fmt.Sprintf("invalid number of args for put %d", len(args)))
 		}
 		return t.writeTransaction(stub, args)
 	} else if method == "get" {
 		return t.readTransaction(stub, args)
+	} else {
+		return shim.Error("unknown function")
 	}
+
 	return shim.Error(fmt.Sprintf("unknown function %s", method))
 }
 
@@ -155,8 +155,8 @@ func (t *cryptoChaincode) Decrypt(key []byte, ciphertext []byte) []byte {
 }
 
 func (t *cryptoChaincode) writeTransaction(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	cryptoArg := t.encryptAndDecrypt(args[2])
-	err := stub.PutState(args[1], cryptoArg)
+	cryptoArg := t.encryptAndDecrypt(args[1])
+	err := stub.PutState(args[0], cryptoArg)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -165,7 +165,7 @@ func (t *cryptoChaincode) writeTransaction(stub shim.ChaincodeStubInterface, arg
 
 func (t *cryptoChaincode) readTransaction(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// Get the state from the ledger
-	val, err := stub.GetState(args[1])
+	val, err := stub.GetState(args[0])
 	if err != nil {
 		return shim.Error(err.Error())
 	}

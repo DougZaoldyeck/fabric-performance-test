@@ -12,8 +12,9 @@ const (
 	ORGNAME     = "org1"
 	CHANNELID   = "mychannel"
 	USERNAME    = "Admin"
-	CHAINCODEID = "testcc"
-	FCN         = "invoke"
+	CHAINCODEID = "zcc"
+	PUT_FCN     = "put"
+	GET_FCN     = "get"
 	CONFIG_PATH = "/opt/gopath/src/github.com/learnergo/fabric-performance-test/fabric-client-go/fixtures/config.yaml"
 	TARGETPEER  = "peer0.org1.example.com"
 )
@@ -22,11 +23,11 @@ var client = Client{}
 
 func GetHandler(w http.ResponseWriter, r *http.Request) {
 
-	args := [][]byte{[]byte("get"), []byte("a")}
+	args := [][]byte{[]byte("a")}
 
 	_, err := client.Query(InterRequest{
 		CHAINCODEID,
-		FCN,
+		GET_FCN,
 		args,
 		nil,
 		[]string{TARGETPEER},
@@ -44,10 +45,10 @@ func PutHandler(w http.ResponseWriter, r *http.Request) {
 
 	kv := []byte(strconv.FormatInt(time.Now().UnixNano(), 10) + strconv.Itoa(rand.Int()))
 
-	args := [][]byte{[]byte("put"), kv, kv}
+	args := [][]byte{kv, kv}
 	_, err := client.Invoke(InterRequest{
 		CHAINCODEID,
-		FCN,
+		PUT_FCN,
 		args,
 		nil,
 		[]string{TARGETPEER},

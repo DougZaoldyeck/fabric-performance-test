@@ -80,7 +80,7 @@ func (setup *Client) Query(req InterRequest) (channel.Response, error) {
 	r.TransientMap = req.TransientMap
 
 	// Create a request (proposal) and send it
-	return setup.client.Execute(r, channel.WithTargetEndpoints(req.Peers...))
+	return setup.client.Query(r, channel.WithTargetEndpoints(req.Peers...))
 }
 
 func (setup *Client) Invoke(req InterRequest) (channel.Response, error) {
@@ -89,5 +89,5 @@ func (setup *Client) Invoke(req InterRequest) (channel.Response, error) {
 	r.Args = req.Args
 	r.ChaincodeID = req.ChaincodeID
 
-	return setup.client.Query(r, channel.WithTargetEndpoints(req.Peers...))
+	return setup.client.Execute(r, channel.WithTargetEndpoints(req.Peers...))
 }

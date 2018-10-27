@@ -32,7 +32,7 @@ peer chaincode query -C mychannel -n mycc -c '{"Args":["get","a"]}'
 ```
 
 ```
-peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile $ORDERER_CA -C mychannel -n mycc -c '{"Args":["put","a",b"]}'
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile $ORDERER_CA -C mychannel -n mycc -c '{"Args":["put","a","b"]}'
 ```
 
 #### 实现思路
@@ -40,7 +40,12 @@ peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile $ORDERER_
 ```
 因为主要侧重吞吐和并发测试，对通道和链码安装部分不是很侧重。
 本项目fabric网络有mychannel通道和testcc链码（名字可以自己确定，并在程序和配置中对应修改）。
-在用命令行创建链码时，先存入一个值对（"a":"b"）,取的测试是取a值；存的测试是存入当前时间戳+随机数。
+在用命令行初始化链码时会存入一个值对（"a":"b"）,取的测试是取a值；存的测试是存入当前时间戳+随机数。
+一下为初始化命令：
+```
+peer chaincode invoke -o orderer.example.com:7050  --tls true --cafile $ORDERER_CA -C mychannel -n testcc -c '{"Args":[]}'
+```
+
 
 **特别提示**：
 为了避免日志打印对性能影响，只打印了error日志。运行正常的标志也就是没有日志打印
@@ -65,7 +70,7 @@ Linux VM-0-17-ubuntu 4.4.0-91-generic #114-Ubuntu SMP Tue Aug 8 11:56:56 UTC 201
 本人tps最佳参数：
 
 ```
-./wrk -t4 -c150 -d10 --timeout 10 http://localhost:8026/v1/gettest
+./wrk -t4 -c150 -d10 --timeout 10 http://localhost:8080/gettest
 
 ./wrk -t4 -c100 -d10 --timeout 30 http://localhost:8080/puttest
 ```
